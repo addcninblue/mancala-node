@@ -4,7 +4,7 @@
     <title>Mancala</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script src="index.js"></script>
+    <script src="game.js"></script>
     <link rel="stylesheet" type="text/css" href="index.css">
   </head>
   <body>
@@ -14,6 +14,9 @@
     </form>
     <form action="">
       <input id="createGame" name="two" autocomplete="off" value="input your name"/><button id="createGameButton">Send</button>
+    </form>
+    <form action="">
+      <button id="leaveRoomButton">leave room</button>
     </form>
     <form action="">
       <button id="getBoard">Get Board</button>
