@@ -1,0 +1,14 @@
+{
+  "name": "mancala",
+  "version": "1.0.0",
+  "description": "mancala",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index"
+  },
+  "author": "Addison Chan",
+  "dependencies": {
+    "express": "^4.15.2",
+    "socket.io": "^1.7.4"
+  }
+}
