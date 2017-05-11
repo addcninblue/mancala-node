@@ -1,15 +1,60 @@
 const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
+const mongoose = require('mongoose');
 require('./routes')(app);
-const Game = require('./mancala');
+// const Game = require('./mancala');
 
 const usernames = {}; // username    -> socket.id
 const users = {};     // socket.id   -> [socket, username, roomname]
 const rooms = [];     // room+number -> [socket, socket, game]
 
-const game = new Game();
-game.start();
+// set up mongoose
+mongoose.connect('mongodb://localhost/boards');
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+const boardSchema = mongoose.Schema({
+  roomNumber: Number,
+  playerOneBoard: [Number],
+  playerTwoBoard: [Number],
+});
+
+boardSchema.methods.move = function (initialRow, initialPosition) {
+  const board = [this.playerOneBoard, this.playerTwoBoard];
+  const numCols = 7;
+  let position = initialPosition;
+  let row = initialRow;
+  let stones = board[row][position];
+  board[row][position] = 0;
+  while (stones > 0) {
+    position += 1;
+    if (row !== initialRow && position === numCols - 1) { // if ends up in enemy home
+      position += 1;
+    }
+    row = (row + Math.floor(position / numCols)) % 2; // integer division
+    position %= numCols;
+    board[row][position] += 1;
+    stones -= 1;
+  }
+  if (row === initialRow) {
+    if (position === 6) {  // if ends up in own space
+      return [board, false];
+    } else if (board[row][position] === 0 && board[(row + 1) % 2][numCols - position - 2] > 0) {
+      board[row][6] += board[row][position] + board[(row + 1) % 2][numCols - position - 2];
+      board[row][position] = 0;
+      board[(row + 1) % 2][numCols - position - 2] = 0;
+      return [board, true];
+    }
+  }
+  return [board, true];
+};
+
+boardSchema.methods.getBoard = function () {
+  return [this.playerOneBoard, this.playerTwoBoard];
+};
+
+const Board = mongoose.model('Board', boardSchema);
+db.on('error', console.error.bind(console, 'connection error:'));
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -61,19 +106,35 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('start game', () => {
+    const roomNumber = users[socket.id][2].substring(4);
+    const board = new Board({
+      roomNumber,
+      playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
+      playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
+    });
+    board.save((err, board) => {
+      if (err) console.error(err);
+      console.log([board.playerOneBoard, board.playerTwoBoard]);
+    });
+  });
+
   socket.on('get board', () => {
     this.board = [[1, 2, 3], [2, 3, 4]];
     socket.emit('board', this.board);
   });
 
   socket.on('make move', (move, callback) => {
+    const roomNumber = users[socket.id][2].substring(4);
     if (users[socket.id][3]) {
       callback('invalid', 'the move was invalid');
+      return;
     }
-    this.board = [[1, 2, 3], [2, 3, 4]];
-    setTimeout(() => {
-      io.in(users[socket.id][2]).emit('board', this.board);
-    }, 5000);
+    Board.findOne({ roomNumber }, (err, board) => {
+      let goAgain;
+      [board, goAgain] = board.move(1, move); // TODO playerNumber
+      io.in(users[socket.id][2]).emit('board', board);
+    });
   });
 });
 

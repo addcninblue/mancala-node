@@ -3,8 +3,8 @@ module.exports = function (app) {
     res.sendFile(`${__dirname}/public/index.html`);
   });
 
-  app.get('/index.js', (req, res) => {
-    res.sendFile(`${__dirname}/public/index.js`);
+  app.get('/game.js', (req, res) => {
+    res.sendFile(`${__dirname}/public/game.js`);
   });
 
   app.get('/index.css', (req, res) => {

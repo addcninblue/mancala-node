@@ -9,40 +9,6 @@ const Board = class {
     this.continues = [];
   }
 
-  move(initialRow, initialPosition, saveState) {
-    let position = initialPosition;
-    let row = initialRow;
-    let stones = this.board[row][position];
-    this.board[row][position] = 0;
-    while (stones > 0) {
-      position += 1;
-      if (row !== initialRow && position === this.numCols - 1) { // if ends up in enemy home
-        position += 1;
-      }
-      row = (row + (position / this.numCols)) % 2;
-      position %= this.numCols;
-      this.board[row][position] += 1;
-      stones -= 1;
-    }
-    if (row === initialRow) {
-      if (position === 6) {  // if ends up in own space
-        return false;
-      } else if (this.board[row][position] === 0 &&
-        this.board[(row + 1) % 2][this.numCols - position - 2] > 0) {
-        if (saveState) {
-          saveState(false);
-          this.continues.unshift(true);
-        }
-        this.board[row][6] += this.board[row][position] +
-          this.board[(row + 1) % 2][this.numCols - position - 2];
-        this.board[row][position] = 0;
-        this.board[(row + 1) % 2][this.numCols - position - 2] = 0;
-        return true;
-      }
-    }
-    return true;
-  }
-
   saveState(parent) {
     if (parent) {
       this.continues.unshift(false);
@@ -101,4 +67,4 @@ const Board = class {
   }
 
 };
-module.exports = this.board;
+module.exports = Board;
