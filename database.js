@@ -7,10 +7,12 @@ db.on('error', console.error.bind(console, 'connection error:'));
 
 // board schema
 const boardSchema = mongoose.Schema({
-  roomNumber: Number,
+  roomname: { type: String, unique: true },
   currentTurn: Number,
   playerOneBoard: [Number],
   playerTwoBoard: [Number],
+  playerOneId: String,
+  playerTwoId: String,
 });
 
 boardSchema.methods.move = function (initialRow, initialPosition) {
@@ -58,7 +60,7 @@ const userSchema = mongoose.Schema({
   roomname: String,
 });
 
-userSchema.methods.getSocket = function () {
+userSchema.methods.getSocket = function (io) {
   return io.sockets.connected[this.socketid];
 };
 

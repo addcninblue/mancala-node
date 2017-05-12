@@ -4,6 +4,9 @@ const User = database.User;
 const Board = database.Board;
 
 module.exports = (io) => {
+  function randomString(length) {
+    return (Math.random().toString(36) + '00000000000000000').slice(2, length + 2);
+  }
   io.on('connection', (socket) => {
     console.log('a user connected');
     const user = new User({
@@ -44,6 +47,7 @@ module.exports = (io) => {
             // save user with new username
             user.save((err, updatedUser) => {
               console.log(updatedUser.username);
+              callback('success', 'Username set');
               if (err) console.log(err);
             });
           } else {
@@ -54,21 +58,28 @@ module.exports = (io) => {
     });
 
     socket.on('create game', (otherUsername, callback) => {
-      if (!(otherUsername in usernames)) {
-        callback('error', 'This is not a valid player!');
-        return;
-      }
-      // adds two users to room
-      const roomNumber = (rooms.indexOf(null) === -1) ? rooms.length : rooms.indexOf(null);
-      rooms[roomNumber] = [socket, users[usernames[otherUsername]][0]];
-      users[socket.id][2] = `room${roomNumber}`;
-      users[usernames[otherUsername]][2] = `room${roomNumber}`;
-      users[socket.id][3] = 0;
-      users[usernames[otherUsername]][3] = 1;
-      socket.join(`room${roomNumber}`);
-      users[usernames[otherUsername]][0].join(`room${roomNumber}`);
-      io.in(`room${roomNumber}`).emit('join game', `You have joined room ${roomNumber}`);
-      console.log(`created game: ${roomNumber}`);
+      User.findOne({ socketid: socket.id }, (err, user) => {
+        if (user) {
+          User.findOne({ username: otherUsername }, (err, user2) => {
+            const roomname = randomString(15);
+            const board = new Board({
+              roomname,
+              currentTurn: 0,
+              playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
+              playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
+              playerOneId: user.socketid,
+              playerTwoId: user2.socketid,
+            });
+            board.save((err, board) => {
+              // if (err) console.error(err);
+              console.log([board.playerOneBoard, board.playerTwoBoard]);
+              user.getSocket(io).join(roomname);
+              user2.getSocket(io).join(roomname);
+              io.in(roomname).emit('join game', `You have joined room ${roomname}`);
+            });
+          });
+        }
+      });
     });
 
     socket.on('leave room', (callback) => {
@@ -98,33 +109,50 @@ module.exports = (io) => {
     });
 
     socket.on('get board', () => {
-      this.board = [[1, 2, 3], [2, 3, 4]];
-      socket.emit('board', this.board);
+      Board.findOne({ $or: [
+        { playerOneId: socket.id },
+        { playerTwoId: socket.id },
+      ] }, (err, board) => {
+        console.log(board);
+        socket.emit('board', board.getBoard());
+      });
     });
 
     socket.on('make move', (move, callback) => {
-      const roomNumber = users[socket.id][2].substring(4);
-      if (users[socket.id][3]) {
+      move = parseInt(move);
+      if (move > 6 || move < 0) {
         callback('invalid', 'the move was invalid');
         return;
       }
-      Board.findOne({ roomNumber }, (err, board) => {
+      Board.findOne({ $or: [
+        { playerOneId: socket.id },
+        { playerTwoId: socket.id },
+      ] }, (err, board) => {
         let boardArray;
         let goAgain;
-        [boardArray, goAgain] = board.move(1, move); // TODO playerNumber
-        const row = goAgain ? board.row : (board.row + 1) % 2;
+        const row = (board.playerOneId === socket.id) ? 0 : 1;
+        if (row !== board.currentTurn) {
+          callback('invalid', 'it\'s not your turn');
+          return;
+        }
+        [boardArray, goAgain] = board.move(row, move);
+        const currentTurn = goAgain ? board.currentTurn : (board.currentTurn + 1) % 2;
         const doc = {
-          row,
+          currentTurn,
           playerOneBoard: boardArray[0],
           playerTwoBoard: boardArray[1],
         };
-        Board.findOneAndUpdate({ roomNumber }, doc, (err, raw) => {
+        Board.findOneAndUpdate({ $or: [
+          { playerOneId: socket.id },
+          { playerTwoId: socket.id },
+        ] }, doc, (err, raw) => {
           if (err) {
             console.log("err");
             console.log(raw);
           }
         });
-        io.in(users[socket.id][2]).emit('board', boardArray);
+        console.log(boardArray);
+        io.in(board.roomname).emit('board', boardArray);
       });
     });
   });

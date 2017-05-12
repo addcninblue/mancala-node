@@ -34,10 +34,11 @@ $(() => {
     return false;
   });
 
-  $('#makeMove').click(() => {
-    socket.emit('make move', 2, (err, msg) => {
+  $('#makeMoveButton').click(() => {
+    socket.emit('make move', $('#makeMove').val(), (err, msg) => {
       console.log(`${err}: ${msg}`);
     });
+    $('#makeMove').val('');
     return false;
   });
 
@@ -51,6 +52,9 @@ $(() => {
   });
 
   socket.on('board', (board) => {
+    $('body').append(board[0].reverse() + '<br>');
+    $('body').append(board[1] + '<br>');
+    $('body').append('<br>');
     console.log(board);
   });
 });
