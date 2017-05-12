@@ -25,6 +25,11 @@ $(() => {
   });
 
   $('#getBoard').click(() => {
+    socket.emit('get board');
+    return false;
+  });
+
+  $('#startGame').click(() => {
     socket.emit('start game');
     return false;
   });
