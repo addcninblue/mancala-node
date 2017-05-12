@@ -6,7 +6,7 @@ require('./routes')(app);
 // const Game = require('./mancala');
 
 const usernames = {}; // username    -> socket.id
-const users = {};     // socket.id   -> [socket, username, roomname]
+const users = {};     // socket.id   -> [socket, username, roomname, playerNumber]
 const rooms = [];     // room+number -> [socket, socket, game]
 
 // set up mongoose
@@ -15,6 +15,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 const boardSchema = mongoose.Schema({
   roomNumber: Number,
+  currentTurn: Number,
   playerOneBoard: [Number],
   playerTwoBoard: [Number],
 });
@@ -36,17 +37,18 @@ boardSchema.methods.move = function (initialRow, initialPosition) {
     board[row][position] += 1;
     stones -= 1;
   }
+  let goAgain = false;
   if (row === initialRow) {
     if (position === 6) {  // if ends up in own space
-      return [board, false];
+      goAgain = true;
     } else if (board[row][position] === 0 && board[(row + 1) % 2][numCols - position - 2] > 0) {
       board[row][6] += board[row][position] + board[(row + 1) % 2][numCols - position - 2];
       board[row][position] = 0;
       board[(row + 1) % 2][numCols - position - 2] = 0;
-      return [board, true];
+      goAgain = false;
     }
   }
-  return [board, true];
+  return [board, goAgain];
 };
 
 boardSchema.methods.getBoard = function () {
@@ -90,6 +92,8 @@ io.on('connection', (socket) => {
     rooms[roomNumber] = [socket, users[usernames[otherUsername]][0]];
     users[socket.id][2] = `room${roomNumber}`;
     users[usernames[otherUsername]][2] = `room${roomNumber}`;
+    users[socket.id][3] = 0;
+    users[usernames[otherUsername]][3] = 1;
     socket.join(`room${roomNumber}`);
     users[usernames[otherUsername]][0].join(`room${roomNumber}`);
     io.in(`room${roomNumber}`).emit('join game', `You have joined room ${roomNumber}`);
@@ -110,9 +114,11 @@ io.on('connection', (socket) => {
     const roomNumber = users[socket.id][2].substring(4);
     const board = new Board({
       roomNumber,
+      currentTurn: 0,
       playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
       playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
     });
+    Board.remove({ roomNumber }, () => {});
     board.save((err, board) => {
       if (err) console.error(err);
       console.log([board.playerOneBoard, board.playerTwoBoard]);
@@ -131,9 +137,22 @@ io.on('connection', (socket) => {
       return;
     }
     Board.findOne({ roomNumber }, (err, board) => {
+      let boardArray;
       let goAgain;
-      [board, goAgain] = board.move(1, move); // TODO playerNumber
-      io.in(users[socket.id][2]).emit('board', board);
+      [boardArray, goAgain] = board.move(1, move); // TODO playerNumber
+      const row = goAgain ? board.row : (board.row + 1) % 2;
+      const doc = {
+        row,
+        playerOneBoard: boardArray[0],
+        playerTwoBoard: boardArray[1],
+      };
+      Board.findOneAndUpdate({ roomNumber }, doc, (err, raw) => {
+        if (err) {
+          console.log("err");
+          console.log(raw)
+        }
+      });
+      io.in(users[socket.id][2]).emit('board', boardArray);
     });
   });
 });
