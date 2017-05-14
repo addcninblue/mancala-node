@@ -23,7 +23,9 @@ module.exports = (io) => {
         if (err) console.log("could not delete user");
         console.log(user);
         if (user.roomname) {
-          io.in(roomname).emit('exit game');
+          Board.findOneAndRemove({ roomname: user.roomname }, (err, board) => {
+          });
+          io.in(user.roomname).emit('exit game');
         }
       });
     });
@@ -46,7 +48,7 @@ module.exports = (io) => {
             user.username = username;
             // save user with new username
             user.save((err, updatedUser) => {
-              console.log(updatedUser.username);
+              console.log('new user: ' + updatedUser.username);
               callback('success', 'Username set');
               if (err) console.log(err);
             });
@@ -61,6 +63,16 @@ module.exports = (io) => {
       User.findOne({ socketid: socket.id }, (err, user) => {
         if (user) {
           User.findOne({ username: otherUsername }, (err, user2) => {
+            if (!user2) {
+              callback('Err', 'Invalid user!');
+              return;
+            } else if (user.roomname) {
+              callback('Err', `${user.username} is already in a room!`);
+              return;
+            } else if (user2.roomname) {
+              callback('Err', `${user2.username} is already in a room!`);
+              return;
+            }
             const roomname = randomString(15);
             const board = new Board({
               roomname,
@@ -70,9 +82,18 @@ module.exports = (io) => {
               playerOneId: user.socketid,
               playerTwoId: user2.socketid,
             });
+            const doc = {
+              roomname,
+            };
+            User.update({ $or: [
+              { socketid: user.socketid },
+              { socketid: user2.socketid },
+            ] }, doc, { multi: true }, (err, user) => {
+
+            });
             board.save((err, board) => {
-              // if (err) console.error(err);
-              console.log([board.playerOneBoard, board.playerTwoBoard]);
+              // TODO add game to users
+              console.log('new game: ' + roomname);
               user.getSocket(io).join(roomname);
               user2.getSocket(io).join(roomname);
               io.in(roomname).emit('join game', `You have joined room ${roomname}`);
@@ -120,7 +141,7 @@ module.exports = (io) => {
 
     socket.on('make move', (move, callback) => {
       move = parseInt(move);
-      if (move > 6 || move < 0) {
+      if (move > 5 || move < 0) {
         callback('invalid', 'the move was invalid');
         return;
       }
