@@ -25,7 +25,9 @@ $(() => {
   });
 
   $('#getBoard').click(() => {
-    socket.emit('get board');
+    socket.emit('get board', (err, msg) => {
+      console.log(`${err}: ${msg}`);
+    });
     return false;
   });
 
@@ -51,7 +53,10 @@ $(() => {
     console.log('The other player has left the game.');
   });
 
-  socket.on('board', (board) => {
+  socket.on('board', (data) => {
+    const board = data[1];
+    console.log(data);
+    $('body').append(data[0] + '<br>');
     $('body').append(board[0].reverse() + '<br>');
     $('body').append(board[1] + '<br>');
     $('body').append('<br>');

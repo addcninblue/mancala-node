@@ -1,5 +1,9 @@
 // set up mongoose
 const mongoose = require('mongoose');
+// // q
+// mongoose.Promise = require('q').Promise;
+// // native promises
+// mongoose.Promise = global.Promise;
 
 mongoose.connect('mongodb://localhost/mancala');
 const db = mongoose.connection;

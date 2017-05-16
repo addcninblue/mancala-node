@@ -21,7 +21,6 @@ module.exports = (io) => {
 
       User.findOneAndRemove({ socketid: socket.id }, (err, user) => {
         if (err) console.log("could not delete user");
-        console.log(user);
         if (user.roomname) {
           Board.findOneAndRemove({ roomname: user.roomname }, (err, board) => {
           });
@@ -82,17 +81,15 @@ module.exports = (io) => {
               playerOneId: user.socketid,
               playerTwoId: user2.socketid,
             });
-            const doc = {
-              roomname,
-            };
-            User.update({ $or: [
-              { socketid: user.socketid },
-              { socketid: user2.socketid },
-            ] }, doc, { multi: true }, (err, user) => {
-
+            user.roomname = roomname;
+            user.save((err, user) => {
+              if (err) console.log(err);
+            });
+            user2.roomname = roomname;
+            user.save((err, user) => {
+              if (err) console.log(err);
             });
             board.save((err, board) => {
-              // TODO add game to users
               console.log('new game: ' + roomname);
               user.getSocket(io).join(roomname);
               user2.getSocket(io).join(roomname);
@@ -105,35 +102,38 @@ module.exports = (io) => {
 
     socket.on('leave room', (callback) => {
       // User.findOneAndDelete({ }) // TODO
-      if (socket.id in users && users[socket.id][2]) {
-        users[socket.id][2] = null;
-        console.log('left');
-      } else {
-        console.log('a');
-        callback('error', "you're not in a room");
-      }
+      // if (socket.id in users && users[socket.id][2]) {
+      //   users[socket.id][2] = null;
+      //   console.log('left');
+      // } else {
+      //   console.log('a');
+      //   callback('error', "you're not in a room");
+      // }
     });
 
-    socket.on('start game', () => {
-      const roomNumber = users[socket.id][2].substring(4);
-      const board = new Board({
-        roomNumber,
-        currentTurn: 0,
-        playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
-        playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
-      });
-      Board.remove({ roomNumber }, () => {});
-      board.save((err, board) => {
-        if (err) console.error(err);
-        console.log([board.playerOneBoard, board.playerTwoBoard]);
-      });
-    });
+    // socket.on('start game', () => {
+    //   const board = new Board({
+    //     roomNumber,
+    //     currentTurn: 0,
+    //     playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
+    //     playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
+    //   });
+    //   Board.remove({ roomNumber }, () => {});
+    //   board.save((err, board) => {
+    //     if (err) console.error(err);
+    //     console.log([board.playerOneBoard, board.playerTwoBoard]);
+    //   });
+    // });
 
-    socket.on('get board', () => {
+    socket.on('get board', (callback) => {
       Board.findOne({ $or: [
         { playerOneId: socket.id },
         { playerTwoId: socket.id },
       ] }, (err, board) => {
+        if (board == null) {
+          callback('Err', 'You are not in game!');
+          return;
+        }
         console.log(board);
         socket.emit('board', board.getBoard());
       });
@@ -149,6 +149,10 @@ module.exports = (io) => {
         { playerOneId: socket.id },
         { playerTwoId: socket.id },
       ] }, (err, board) => {
+        if (board == null) {
+          callback('Error', 'You are not in game!');
+          return;
+        }
         let boardArray;
         let goAgain;
         const row = (board.playerOneId === socket.id) ? 0 : 1;
@@ -168,12 +172,14 @@ module.exports = (io) => {
           { playerTwoId: socket.id },
         ] }, doc, (err, raw) => {
           if (err) {
-            console.log("err");
+            console.log('err');
             console.log(raw);
           }
         });
-        console.log(boardArray);
-        io.in(board.roomname).emit('board', boardArray);
+        User.findOne({ socketid: socket.id }, function(err, user) {
+          const username = user.username;
+          io.in(board.roomname).emit('board', [username, boardArray]);
+        });
       });
     });
   });
