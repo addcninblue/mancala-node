@@ -5,7 +5,11 @@ const mongoose = require('mongoose');
 // // native promises
 // mongoose.Promise = global.Promise;
 
-mongoose.connect('mongodb://localhost/mancala');
+const options = { server: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } },
+  replset: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } } };
+const mongodbUri = 'mongodb://server:addisonchan@ds064299.mlab.com:64299/mancala';
+// mongoose.connect('mongodb://localhost/mancala'); // DEV
+mongoose.connect(mongodbUri, options); // PRODUCTION
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 

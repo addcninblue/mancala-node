@@ -1,0 +1,12 @@
+<div id="game">
+  <table id="table">
+    <tr>
+      <td rowspan="2" valign="middle">{{ board[0][0] }}</td>
+      <td *ngFor="let x of board[0].slice(1)">{{ x }}</td>
+      <td rowspan="2" valign="middle">{{ board[1][0] }}</td>
+    </tr>
+    <tr>
+      <td *ngFor="let x of board[1].slice(1).reverse()" (click)="move($event)">{{ x }}</td>
+    </tr>
+</table>
+</div>
