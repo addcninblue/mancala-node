@@ -1,12 +1,15 @@
 <div id="game">
+  <button (click)="leaveGame($event)">Exit Game</button>
+  <div id="playerOne"><h1> {{ players[0] }}</h1><div id="playerOneTurn"></div></div>
   <table id="table">
     <tr>
-      <td rowspan="2" valign="middle">{{ board[0][0] }}</td>
-      <td *ngFor="let x of board[0].slice(1)">{{ x }}</td>
-      <td rowspan="2" valign="middle">{{ board[1][0] }}</td>
+      <td rowspan="2" valign="middle">{{ board[0][6] }}</td>
+      <td *ngFor="let x of board[0].slice(0, 6).reverse()" (click)="move($event, 1)">{{ x }}</td>
+      <td rowspan="2" valign="middle">{{ board[1][6] }}</td>
     </tr>
     <tr>
-      <td *ngFor="let x of board[1].slice(1).reverse()" (click)="move($event)">{{ x }}</td>
+      <td *ngFor="let x of board[1].slice(0, 6)" (click)="move($event, 2)">{{ x }}</td>
     </tr>
-</table>
+  </table>
+  <div id="playerTwo"><h1> {{ players[1] }}</h1><div id="playerTwoTurn"></div></div>
 </div>

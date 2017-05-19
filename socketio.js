@@ -18,19 +18,19 @@ module.exports = (io) => {
 
     socket.on('disconnect', () => {
       console.log('a user disconnected');
-
       User.findOneAndRemove({ socketid: socket.id }, (err, user) => {
         if (err) console.log("could not delete user");
         if (user.roomname) {
           Board.findOneAndRemove({ roomname: user.roomname }, (err, board) => {
           });
-          io.in(user.roomname).emit('exit game');
+          io.in(user.roomname).emit('leave room');
         }
       });
     });
 
     socket.on('set username', (username, callback) => {
       // check to see if anyone has that username
+      socket.emit('testing', 'hi');
       if (username === '') {
         callback('error', 'Empty string');
         return;
@@ -58,72 +58,90 @@ module.exports = (io) => {
       });
     });
 
-    socket.on('create game', (otherUsername, callback) => {
+    socket.on('create game', (callback) => {
       User.findOne({ socketid: socket.id }, (err, user) => {
-        if (user) {
-          User.findOne({ username: otherUsername }, (err, user2) => {
-            if (!user2) {
-              callback('Err', 'Invalid user!');
-              return;
-            } else if (user.roomname) {
-              callback('Err', `${user.username} is already in a room!`);
-              return;
-            } else if (user2.roomname) {
-              callback('Err', `${user2.username} is already in a room!`);
-              return;
-            }
-            const roomname = randomString(15);
-            const board = new Board({
-              roomname,
-              currentTurn: 0,
-              playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
-              playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
-              playerOneId: user.socketid,
-              playerTwoId: user2.socketid,
-            });
-            user.roomname = roomname;
-            user.save((err, user) => {
-              if (err) console.log(err);
-            });
-            user2.roomname = roomname;
-            user.save((err, user) => {
-              if (err) console.log(err);
-            });
-            board.save((err, board) => {
-              console.log('new game: ' + roomname);
-              user.getSocket(io).join(roomname);
-              user2.getSocket(io).join(roomname);
-              io.in(roomname).emit('join game', `You have joined room ${roomname}`);
-            });
-          });
+        if (user.roomname) {
+          callback('Err', `${user.username} is already in a room!`);
+          return;
         }
+        const roomname = randomString(15);
+        const board = new Board({
+          roomname,
+          currentTurn: 0,
+          playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
+          playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
+          playerOneId: user.socketid,
+          playerTwoId: undefined,
+          playerOneName: user.username,
+          playerTwoName: undefined,
+        });
+        user.save((err, user) => {
+          if (err) console.log(err);
+        });
+        board.save((err, board) => {
+          console.log('new game: ' + roomname);
+          user.getSocket(io).join(roomname);
+          callback('success');
+          socket.emit('player number', 1);
+          io.in(roomname).emit('players', [board.playerOneName, 'Waiting for player', 1]);
+        });
       });
     });
 
-    socket.on('leave room', (callback) => {
-      // User.findOneAndDelete({ }) // TODO
-      // if (socket.id in users && users[socket.id][2]) {
-      //   users[socket.id][2] = null;
-      //   console.log('left');
-      // } else {
-      //   console.log('a');
-      //   callback('error', "you're not in a room");
-      // }
+    socket.on('join game', (roomname, callback) => {
+      Board.findOne({ roomname }, (err, board) => {
+        User.findOne({ socketid: socket.id }, (err, user) => {
+          if (user.roomname) {
+            callback('Err', `${user.username} is already in a room!`);
+            return;
+          }
+          user.roomname = roomname;
+          user.save((err, user) => {
+            if (err) console.log(err);
+          });
+          if (board.playerTwoId) {
+            socket.join(roomname);
+            callback('success');
+            socket.emit('players', [board.playerOneName, board.playerTwoName]);
+            socket.emit('games', [board.playerOneBoard, board.playerTwoBoard, board.currentTurn + 1]);
+            return;
+          }
+          board.playerTwoId = user.socketid;
+          board.playerTwoName = user.username;
+          board.save((err, board) => {
+            console.log('joined game: ' + roomname);
+            user.getSocket(io).join(roomname);
+            callback('success');
+            io.in(roomname).emit('players', [board.playerOneName, board.playerTwoName]);
+            io.in(roomname).emit('games', [board.playerOneBoard, board.playerTwoBoard, board.currentTurn + 1]);
+            socket.emit('player number', 2);
+          });
+        });
+      });
     });
 
-    // socket.on('start game', () => {
-    //   const board = new Board({
-    //     roomNumber,
-    //     currentTurn: 0,
-    //     playerOneBoard: [4, 4, 4, 4, 4, 4, 0],
-    //     playerTwoBoard: [4, 4, 4, 4, 4, 4, 0],
-    //   });
-    //   Board.remove({ roomNumber }, () => {});
-    //   board.save((err, board) => {
-    //     if (err) console.error(err);
-    //     console.log([board.playerOneBoard, board.playerTwoBoard]);
-    //   });
-    // });
+    socket.on('leave room', () => {
+      console.log('leave room');
+      let roomname;
+      Board.findOneAndRemove({ $or: [
+        { playerOneId: socket.id },
+        { playerTwoId: socket.id },
+      ] }, (err, board) => {
+        io.in(board.roomname).emit('leave room');
+        User.findOne({ socketid: board.playerOneId }, (err, user) => {
+          roomname = user.roomname;
+          user.roomname = undefined;
+          user.getSocket(io).leave(roomname);
+          user.save((err, user) => { });
+        });
+        User.findOne({ socketid: board.playerTwoId }, (err, user) => {
+          user.roomname = undefined;
+          user.getSocket(io).leave(roomname);
+          user.save((err, user) => { });
+        });
+      });
+      console.log(roomname);
+    });
 
     socket.on('get board', (callback) => {
       Board.findOne({ $or: [
@@ -135,7 +153,7 @@ module.exports = (io) => {
           return;
         }
         console.log(board);
-        socket.emit('board', board.getBoard());
+        socket.emit('board', [board.playerOneBoard, board.playerTwoBoard, board.currentTurn + 1]);
       });
     });
 
@@ -149,6 +167,10 @@ module.exports = (io) => {
         { playerOneId: socket.id },
         { playerTwoId: socket.id },
       ] }, (err, board) => {
+        if (typeof board.PlayerTwoName === undefined) {
+          callback('Error', 'You are not in game1!');
+          return;
+        }
         if (board == null) {
           callback('Error', 'You are not in game!');
           return;
@@ -176,10 +198,18 @@ module.exports = (io) => {
             console.log(raw);
           }
         });
-        User.findOne({ socketid: socket.id }, function(err, user) {
-          const username = user.username;
-          io.in(board.roomname).emit('board', [username, boardArray]);
-        });
+        io.in(board.roomname).emit('games', [boardArray[0], boardArray[1], board.currentTurn]);
+      });
+    });
+
+    socket.on('get games', (callback) => {
+      Board.find({}, (err, boards) => {
+        if (err) console.log(err);
+        const games = [];
+        for (let i = 0; i < boards.length; i += 1) {
+          games.push([boards[i].playerOneName, boards[i].playerTwoName, boards[i].roomname]);
+        }
+        callback(err, games);
       });
     });
   });

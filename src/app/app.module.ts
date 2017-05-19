@@ -8,19 +8,22 @@ import { AppComponent } from './app.component';
 import { LobbyComponent } from './lobby/lobby.component';
 import { GameComponent } from './game/game.component';
 import { SocketioService } from './socketio.service';
+import { LoginComponent } from './login/login.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     LobbyComponent,
-    GameComponent
+    GameComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,
     FormsModule,
     HttpModule,
     RouterModule.forRoot([
-      // { path: '', redirect: '/lobby' },
+      { path: '', redirectTo: '/login', pathMatch: 'full' },
+      { path: 'login', component: LoginComponent },
       { path: 'lobby', component: LobbyComponent },
       { path: 'game', component: GameComponent },
     ])

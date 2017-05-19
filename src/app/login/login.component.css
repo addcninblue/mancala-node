@@ -1,0 +1,51 @@
+#login {
+  min-height: 90vh;
+  min-width: 100vw;
+}
+
+#prompt {
+  height: 50vh;
+  width: 40vw;
+  /* border: 3px solid #002b36; */
+  background-color: #002b36;
+
+  top: 50%;
+  left: 50%;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1vw;
+  text-align: center;
+}
+
+h1 {
+  padding: 4vh;
+  font-size: 5vw;
+  /* top: 1vh; */
+  color: white;
+}
+
+input {
+  /* background-color: ; */
+  border: none;
+  height: 5vh;
+  width: 18vw;
+  border-radius: 4px;
+  text-align: center;
+  margin-top: 5vh;
+  margin-bottom: 6vh;
+}
+
+button {
+  height: 5vh;
+  width: 5vw;
+  border-radius: 10px;
+  border: none;
+  background-color: #268bd2;
+  color: #eee8d5;
+}
+
+form {
+  text-align: center;
+}

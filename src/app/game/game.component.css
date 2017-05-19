@@ -22,3 +22,40 @@ tr, td {
   text-align: center;
   vertical-align: middle;
 }
+
+#playerOne {
+  width: 100vw;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 5vh;
+  padding-top: 15vh;
+}
+
+#playerTwo {
+  width: 100vw;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 5vh;
+  position: absolute;
+  top: 70vh;
+}
+
+#playerOneTurn, #playerTwoTurn {
+  background-color: #859900;
+  width: 1vw;
+  height: 1vw;
+  border-radius: 1000px;
+  bottom: 3vh;
+  left: 60vw;
+  position: relative;
+  visibility: hidden;
+}
+
+button {
+  border-style: none;
+  background-color: #93a1a1;
+  position: relative;
+  top: 1vw;
+  left: 1vw;
+  padding: 1vw;
+}

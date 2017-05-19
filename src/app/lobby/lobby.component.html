@@ -1,2 +1,19 @@
-<div id="lobby"></div>
-hi
+<div id="lobby">
+  <table>
+    <tr>
+      <td colspan="4" id="createGame" (click)="createGame($event)">Create Game</td>
+    </tr>
+    <tr>
+      <th id="player1">Player 1</th>
+      <th id="player2">Player 2</th>
+      <th id="capacity">Capacity</th>
+      <th id="action"></th>
+    </tr>
+    <tr *ngFor="let x of games" >
+      <td>{{ x[0] }}</td>
+      <td>{{ x[1] }}</td>
+      <td>{{ ((x[0]) ? 1 : 0) + ((x[1]) ? 1 : 0) }} / 2</td>
+      <td style="cursor: pointer" (click)="joinGame($event)" id="{{ x[2] }}">{{ (((x[0]) ? 1 : 0) + ((x[1]) ? 1 : 0) == 1) ? "Join" : "Spectate" }}</td>
+    </tr>
+  </table>
+</div>

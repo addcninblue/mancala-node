@@ -21,6 +21,8 @@ const boardSchema = mongoose.Schema({
   playerTwoBoard: [Number],
   playerOneId: String,
   playerTwoId: String,
+  playerOneName: String,
+  playerTwoName: String,
 });
 
 boardSchema.methods.move = function (initialRow, initialPosition) {

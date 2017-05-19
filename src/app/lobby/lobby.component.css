@@ -1,5 +1,40 @@
 #lobby {
-  background-color: red;
   height: 90vh;
+  width: 100vw;
   overflow: none;
+}
+
+#createGame {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 4vh;
+  cursor: pointer;
+}
+
+th {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 4vh;
+}
+
+td {
+  font-family: 'Raleway', sans-serif;
+  font-size: 4vh;
+}
+
+#player1, #player2 {
+  width: 30vw;
+}
+
+#capacity {
+  width: 15vw;
+}
+
+table {
+  width: 100vw;
+}
+
+tr, th, td {
+  padding: 3vw;
+  border: 3px solid black;
+  text-align: center;
+  vertical-align: middle;
 }

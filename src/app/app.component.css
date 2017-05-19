@@ -20,15 +20,7 @@ nav ul {
 }
 
 nav li {
-  color: #93a1a1;
   float: left;
-}
-
-nav li.right {
-  float: right;
-}
-
-nav li a {
   color: #fdf6e3;
   display: block;
   padding: 8px;
@@ -37,4 +29,8 @@ nav li a {
   text-decoration: none;
   font-family: 'Montserrat', sans-serif;
   font-size: 3vw;
+}
+
+nav li.right {
+  float: right;
 }
