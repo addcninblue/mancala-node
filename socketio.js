@@ -135,6 +135,9 @@ module.exports = (io) => {
           user.save((err, user) => { });
         });
         User.findOne({ socketid: board.playerTwoId }, (err, user) => {
+          if (!user) {
+            return;
+          }
           user.roomname = undefined;
           user.getSocket(io).leave(roomname);
           user.save((err, user) => { });

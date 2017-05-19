@@ -5,11 +5,8 @@ const mongoose = require('mongoose');
 // // native promises
 // mongoose.Promise = global.Promise;
 
-const options = { server: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } },
-  replset: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } } };
-const mongodbUri = 'mongodb://server:addisonchan@ds064299.mlab.com:64299/mancala';
-// mongoose.connect('mongodb://localhost/mancala'); // DEV
-mongoose.connect(mongodbUri, options); // PRODUCTION
+mongoose.connect('mongodb://localhost/mancala'); // DEV
+mongoose.connect(mongodbUri, options); // PRODUCTION; key redacted
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 
@@ -46,7 +43,7 @@ boardSchema.methods.move = function (initialRow, initialPosition) {
   if (row === initialRow) {
     if (position === 6) {  // if ends up in own space
       goAgain = true;
-    } else if (board[row][position] === 0 && board[(row + 1) % 2][numCols - position - 2] > 0) {
+    } else if (board[row][position] === 1 && board[(row + 1) % 2][numCols - position - 2] > 0) {
       board[row][6] += board[row][position] + board[(row + 1) % 2][numCols - position - 2];
       board[row][position] = 0;
       board[(row + 1) % 2][numCols - position - 2] = 0;
