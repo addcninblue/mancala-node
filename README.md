@@ -1,15 +1,15 @@
 # Mancala
 
+**Currently Offline**
+
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.0.3.
 
 # Stack
 
-## Backend
-- reverse-proxy: nginx
-- server: node.js
+MEAN stack: MongoDB, Express.js, Angular.js, Node.js
 
-## Connection
-- socket.io
+Reverse proxy: Nginx
 
-## Frontend
-- framework: angular.js
+Websockets / communication: socket.io
+
+Web framework: angular.js
